@@ -1,0 +1,47 @@
+version: '3.1'
+services:
+    mysql:
+        image: 'mysql:8.0'
+        working_dir: /application
+        volumes:
+            - './src:/application'
+            - './dbdata:/var/lib/mysql'
+            - './scripts/init.sql:/docker-entrypoint-initdb.d/1.sql'
+        environment:
+            - MYSQL_ROOT_PASSWORD=pass1234
+            - MYSQL_DATABASE=php-playground
+            - MYSQL_USER=playground-user
+            - MYSQL_PASSWORD=playground-pass1234
+        ports:
+            - '3002:3306'
+
+    webserver:
+        image: 'nginx:alpine'
+        working_dir: /application
+        volumes:
+            - './src:/application'
+            - './phpdocker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf'
+        ports:
+            - '3000:80'
+
+    php-fpm:
+        build: phpdocker/php-fpm
+        working_dir: /application
+        volumes:
+            - './src:/application'
+            - './phpdocker/php-fpm/php-ini-overrides.ini:/etc/php/8.1/fpm/conf.d/99-overrides.ini'
+
+    phpmyadmin:
+        image: 'phpmyadmin/phpmyadmin'
+        links:
+            - mysql
+        environment:
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            PMA_ARBITRARY: 1
+            PMA_USER: "playground-user"
+            PMA_PASSWORD: "playground-pass1234"
+        depends_on:
+            - mysql
+        ports:
+            - '8080:80'
